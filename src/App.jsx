@@ -25,10 +25,10 @@ const SAMPLE_ENTRIES = [
 const SAMPLE_BALANCE = 2000000;
 
 // ─── SUPABASE API ──────────────────────────────────────────
-const api = async (method, path, body, token) => {
+const api = async (method, path, body) => {
   const headers = {
     apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${token || SUPABASE_KEY}`,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
     "Content-Type": "application/json",
     Prefer: "return=representation",
   };
@@ -310,8 +310,8 @@ function Dashboard({ session, onLogout }) {
         setBalanceInput(SAMPLE_BALANCE.toString());
       } else {
         const [ents, sets] = await Promise.all([
-          api("GET", "entries?order=date.asc", null, session.token),
-          api("GET", "settings?key=eq.initial_balance", null, session.token),
+          api("GET", "entries?order=date.asc"),
+          api("GET", "settings?key=eq.initial_balance"),
         ]);
         setEntries(ents || []);
         if (sets?.[0]) { const v = parseFloat(sets[0].value) || 0; setInitialBalance(v); setBalanceInput(v.toString()); }
@@ -350,8 +350,8 @@ function Dashboard({ session, onLogout }) {
         if (editId !== null) setEntries(es => es.map(e => e.id === editId ? { ...e, ...payload } : e));
         else setEntries(es => [...es, { ...payload, id: Date.now() }]);
       } else {
-        if (editId !== null) await api("PATCH", `entries?id=eq.${editId}`, payload, session.token);
-        else await api("POST", "entries", payload, session.token);
+        if (editId !== null) await api("PATCH", `entries?id=eq.${editId}`, payload);
+        else await api("POST", "entries", payload);
         await load();
       }
       resetForm(); setShowForm(false);
@@ -369,14 +369,14 @@ function Dashboard({ session, onLogout }) {
 
   const del = async (id) => {
     if (session.isPreview) { setEntries(es => es.filter(e => e.id !== id)); return; }
-    try { await api("DELETE", `entries?id=eq.${id}`, null, session.token); setEntries(es => es.filter(e => e.id !== id)); }
+    try { await api("DELETE", `entries?id=eq.${id}`, null); setEntries(es => es.filter(e => e.id !== id)); }
     catch { setError("Error eliminando"); }
   };
 
   const saveBalance = async () => {
     const val = parseFloat(balanceInput.replace(",", ".")) || 0;
     if (session.isPreview) { setInitialBalance(val); return; }
-    try { await api("PATCH", "settings?key=eq.initial_balance", { value: val.toString() }, session.token); setInitialBalance(val); }
+    try { await api("PATCH", "settings?key=eq.initial_balance", { value: val.toString() }); setInitialBalance(val); }
     catch { setError("Error guardando saldo"); }
   };
 
